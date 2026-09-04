@@ -77,7 +77,7 @@ Kontribusi dalam bentuk apa pun sangat diterima:
   sertakan versi WordPress/PHP, langkah reproduksi, dan pesan error (kalau
   ada) supaya lebih cepat ditelusuri.
 - **Usulkan fitur** juga lewat Issues, beri label `enhancement` kalau bisa.
-- **Kirim Pull Request** — fork repo ini, buat branch baru dari `main`,
+- **Kirim Pull Request** — fork repo ini, buat branch baru dari `master`,
   jelaskan perubahan yang dibuat di deskripsi PR. Untuk perubahan yang
   cukup besar, disarankan buka Issue dulu untuk didiskusikan sebelum mulai
   coding.
