@@ -3,7 +3,7 @@
  * Plugin Name: Login Shield Lite
  * Plugin URI:  https://github.com/addpur/wp-login-shield-lite
  * Description: Plugin ringan untuk mengamankan login WordPress: ganti URL login, blokir wp-admin/wp-login default, limit percobaan login, history login, captcha (Google reCAPTCHA / Cloudflare Turnstile), serta anti-spam komentar, XML-RPC, pingback/trackback, dan registrasi.
- * Version:     1.0.0
+ * Version:     1.0.1
  * Author:      Adi
  * Author URI:  https://github.com/addpur
  * Text Domain: login-shield-lite
@@ -18,11 +18,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Jangan akses file langsung.
 }
 
-define( 'LSL_VERSION', '1.0.0' );
+define( 'LSL_VERSION', '1.0.1' );
 define( 'LSL_PLUGIN_FILE', __FILE__ );
 define( 'LSL_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'LSL_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
-define( 'LSL_DB_VERSION', '1.0.0' );
+define( 'LSL_DB_VERSION', '1.0.0' ); // Versi skema tabel database, terpisah dari versi plugin.
 
 /**
  * Plugin Update Checker (pustaka pihak ketiga, MIT license, oleh Yahnis Elsts:

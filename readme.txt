@@ -4,7 +4,7 @@ Tags: login security, brute force, captcha, comment spam, login url
 Requires at least: 5.8
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 1.0.0
+Stable tag: 1.0.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -45,6 +45,14 @@ array) di tabel `wp_options`, atau menonaktifkan plugin lewat FTP (rename
 folder plugin).
 
 == Changelog ==
+
+= 1.0.1 =
+* Perbaikan fatal: form login di URL slug custom (mis. /admin-login) bisa
+  memicu "critical error" pada beberapa situs/tema. Penyebabnya, wp-login.php
+  di-require terlalu dini (hook 'plugins_loaded'), sebelum tema & banyak API
+  WordPress siap. Sekarang penyajian form login ditunda ke hook 'wp_loaded'
+  (dekat akhir siklus bootstrap WordPress) — pola yang sama dipakai plugin
+  "hide login" populer lain yang sudah teruji bertahun-tahun.
 
 = 1.0.0 =
 * Rilis publik pertama. Mencakup: ganti URL login, blokir wp-admin/wp-login

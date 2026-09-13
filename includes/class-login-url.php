@@ -6,10 +6,23 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Mengganti URL login WordPress dan memblokir akses ke wp-login.php / wp-admin
  * default (untuk pengunjung yang belum login) jika fitur aktif.
+ *
+ * POLA DUA FASE (penting, jangan disederhanakan):
+ * - Fase DETEKSI berjalan sedini mungkin, di hook 'plugins_loaded' (dipanggil
+ *   langsung dari constructor). Di sini kita hanya menentukan jenis request
+ *   dan, kalau perlu blokir, langsung tampilkan 404 generik (aman, tidak
+ *   bergantung tema, jadi aman dieksekusi sedini ini).
+ * - Fase SAJIKAN FORM LOGIN ditunda ke hook 'wp_loaded' (dekat akhir siklus
+ *   bootstrap WordPress). wp-login.php memakai banyak API WordPress (hook
+ *   login, translation, dst) yang belum siap di 'plugins_loaded' — memaksa
+ *   require di situ menyebabkan fatal error. Pola ini sama persis dengan
+ *   yang dipakai plugin "hide login" populer lain yang sudah teruji
+ *   bertahun-tahun di jutaan situs.
  */
 class LSL_Login_Url {
 
 	private $settings;
+	private $serve_login_form = false;
 
 	public function __construct() {
 		$this->settings = LSL_Settings::get_all();
@@ -23,14 +36,13 @@ class LSL_Login_Url {
 		add_filter( 'network_site_url', array( $this, 'filter_site_url' ), 10, 3 );
 		add_filter( 'wp_redirect', array( $this, 'filter_wp_redirect' ), 10, 2 );
 
-		// PENTING: class ini di-construct dari dalam callback yang SEDANG
-		// berjalan pada hook 'plugins_loaded' (lihat lsl_init_plugin()).
-		// Jangan add_action('plugins_loaded', ..., priority_lebih_awal) di
-		// sini — WordPress tidak akan "mundur" ke priority yang sudah
-		// terlewati, sehingga callback itu tidak akan pernah terpanggil.
-		// Karena 'plugins_loaded' sudah cukup awal (sebelum WP mem-parsing
-		// routing/query), kita proses request-nya langsung di sini.
-		$this->handle_request();
+		// Fase deteksi — dijalankan sekarang juga (masih di dalam callback
+		// 'plugins_loaded', lihat lsl_init_plugin()).
+		$this->handle_early_detection();
+
+		// Fase penyajian form login — ditunda sampai WordPress benar-benar
+		// siap (tema, hook login, dsb).
+		add_action( 'wp_loaded', array( $this, 'maybe_serve_login_form' ) );
 	}
 
 	private function get_slug() {
@@ -38,10 +50,11 @@ class LSL_Login_Url {
 	}
 
 	/**
-	 * Cek apakah URL yang diminta adalah wp-login.php / wp-signup.php bawaan,
-	 * atau slug custom kita, lalu bertindak sesuai kondisi.
+	 * Tentukan jenis request: slug baru (tandai untuk disajikan nanti di
+	 * wp_loaded), wp-login.php/wp-admin lama (blokir sekarang juga — ini
+	 * aman dilakukan sedini ini karena block_request() tidak bergantung tema).
 	 */
-	public function handle_request() {
+	private function handle_early_detection() {
 		if ( is_admin() && ! wp_doing_ajax() ) {
 			$this->maybe_block_wp_admin();
 			return;
@@ -54,17 +67,32 @@ class LSL_Login_Url {
 		$request_path = $this->get_request_path();
 		$slug         = $this->get_slug();
 
-		$is_default_login = ( 'wp-login.php' === $request_path );
-		$is_custom_slug    = ( $slug === $request_path );
-
-		if ( $is_custom_slug ) {
-			$this->serve_login_form();
+		if ( $slug === $request_path ) {
+			// Jangan require wp-login.php di sini — masih terlalu dini.
+			// Cukup tandai; eksekusi sesungguhnya ada di maybe_serve_login_form().
+			$this->serve_login_form = true;
 			return;
 		}
 
-		if ( $is_default_login ) {
+		if ( 'wp-login.php' === $request_path ) {
 			$this->block_request();
 		}
+	}
+
+	/**
+	 * Dipanggil di hook 'wp_loaded'. WordPress sudah selesai setup tema,
+	 * query, dan semua hook penting lain di titik ini, jadi require
+	 * wp-login.php di sini aman (tidak fatal error).
+	 */
+	public function maybe_serve_login_form() {
+		if ( ! $this->serve_login_form ) {
+			return;
+		}
+
+		global $pagenow;
+		$pagenow = 'wp-login.php';
+		require ABSPATH . 'wp-login.php';
+		exit;
 	}
 
 	/**
@@ -107,27 +135,15 @@ class LSL_Login_Url {
 	}
 
 	/**
-	 * Tampilkan wp-login.php asli tanpa mengubah URL yang tampil di browser.
-	 */
-	private function serve_login_form() {
-		global $pagenow;
-		$pagenow = 'wp-login.php';
-		require ABSPATH . 'wp-login.php';
-		exit;
-	}
-
-	/**
 	 * Balikan 404 (atau redirect ke home) agar wp-login.php/wp-admin default
 	 * seolah tidak pernah ada.
 	 *
-	 * PENTING: fungsi ini bisa terpanggil dari konteks wp-admin (admin.php)
-	 * MAUPUN front-end, pada hook 'plugins_loaded' — jauh sebelum WordPress
-	 * selesai men-setup tema (functions.php tema, menu, widget, dsb belum
-	 * termuat). Karena itu, JANGAN memuat template 404 milik tema
-	 * (get_query_template) di sini — di konteks wp-admin ini pasti fatal
-	 * error, dan di front-end pun berisiko karena tema belum siap.
-	 * Kita tampilkan 404 generik yang aman & ringan (mirip pendekatan
-	 * plugin "hide login" lain), tanpa bergantung pada tema sama sekali.
+	 * PENTING: fungsi ini dipanggil dari 'plugins_loaded' — jauh sebelum
+	 * WordPress selesai men-setup tema. Karena itu JANGAN memuat template
+	 * 404 milik tema (get_query_template) di sini: di konteks wp-admin ini
+	 * bisa fatal error, dan di front-end pun berisiko karena tema belum
+	 * siap. 404 generik ini sengaja tidak bergantung tema sama sekali,
+	 * sehingga aman dieksekusi sedini ini.
 	 */
 	private function block_request() {
 		$target = $this->settings['redirect_target'];

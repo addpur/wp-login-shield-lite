@@ -69,6 +69,10 @@ Tidak perlu langkah tambahan di sisi WordPress — cukup pastikan nomor versi
 di header `wp-login-shield-lite.php` (`Version:`) dan nama tag Release di
 GitHub selalu sinkron.
 
+## Changelog
+
+Riwayat perubahan lengkap ada di [CHANGELOG.md](CHANGELOG.md).
+
 ## Kontribusi
 
 Kontribusi dalam bentuk apa pun sangat diterima:
@@ -77,7 +81,7 @@ Kontribusi dalam bentuk apa pun sangat diterima:
   sertakan versi WordPress/PHP, langkah reproduksi, dan pesan error (kalau
   ada) supaya lebih cepat ditelusuri.
 - **Usulkan fitur** juga lewat Issues, beri label `enhancement` kalau bisa.
-- **Kirim Pull Request** — fork repo ini, buat branch baru dari `master`,
+- **Kirim Pull Request** — fork repo ini, buat branch baru dari `main`,
   jelaskan perubahan yang dibuat di deskripsi PR. Untuk perubahan yang
   cukup besar, disarankan buka Issue dulu untuk didiskusikan sebelum mulai
   coding.
